@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <header class="header">
+        <h1>{{ pageTitle }}</h1>
+        <p class="subtitle">{{ subtitle }}</p>
+      </header>
+
+      <div class="stats-card">
+        <h2>서버 상태</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">상태</span>
+            <span class="stat-value" :class="stats.status === 'online' ? 'online' : 'offline'">
+              {{ stats.status }}
+            </span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">사용자</span>
+            <span class="stat-value">{{ stats.users }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">메시지</span>
+            <span class="stat-value">{{ stats.messages }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">업타임</span>
+            <span class="stat-value">{{ formatUptime(stats.uptime) }}</span>
+          </div>
+        </div>
+        <button @click="refreshStats" class="btn-refresh" :disabled="loading">
+          {{ loading ? '로딩 중...' : '새로고침' }}
+        </button>
+      </div>
+
+      <div class="info-card">
+        <h2>환영합니다!</h2>
+        <p>서버 시간: <strong><%= serverTime %></strong></p>
+        <p><%= message %></p>
+        <div class="counter">
+          <p>카운터: {{ counter }}</p>
+          <button @click="incrementCounter" class="btn-counter">증가</button>
+          <button @click="decrementCounter" class="btn-counter">감소</button>
+          <button @click="resetCounter" class="btn-counter">리셋</button>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <p>마지막 업데이트: {{ lastUpdate }}</p>
+      </footer>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

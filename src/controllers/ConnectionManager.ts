@@ -2,18 +2,30 @@
 // WebSocket 연결 관리자
 import * as WebSocket from "ws";
 import {randomUUID} from "node:crypto";
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 
-@injectable()
+@singleton()
 export class ConnectionManager {
-    private static connections: Map<string, WebSocket> = new Map();
-    private static messages: Set<String> = new Set();
+    private connections: Map<string, WebSocket> = new Map();
+    private messages: Set<object> = new Set();
 
-    static add(ws: WebSocket) {
+    constructor(){
+        console.log('connection manager created');
+    }
+
+    public add(ws: WebSocket) {
         this.connections.set(randomUUID(), ws);
     }
 
-    static remove(ws: WebSocket) {
+    public remove(ws: WebSocket) {
+        let key: string|null = this.getKeyByWebsocket(ws);
+
+        if (key)
+            this.connections.delete(key);
+    }
+
+    public getKeyByWebsocket(ws: WebSocket): string|null
+    {
         let key: string|null = null;
         const entries = this.connections.entries();
         for (let [k, v] of entries) {
@@ -23,12 +35,12 @@ export class ConnectionManager {
             }
         }
 
-        if (key)
-            this.connections.delete(key);
+        return key;
     }
 
-    static getConnections(): Array<any>
+    public getConnections(): Array<any>
     {
+        console.log('get connections : ' + this.connections.size)
         let result: Array<any> = [];
         for(let [key, conn] of this.connections) {
             result.push(
@@ -45,21 +57,24 @@ export class ConnectionManager {
         return result;
     }
 
-    static getCount(): number {
+    public getCount(): number {
         return this.connections.size;
     }
 
-    static addMessages(message: string): void
+    public addMessages(ws:WebSocket, message: string): void
     {
-        this.messages.add(message);
+        this.messages.add({
+            sender: this.getKeyByWebsocket(ws),
+            message: message
+        });
     }
 
-    static getMessageCount(): number {
+    public getMessageCount(): number {
         return this.messages.size;
     }
 
-    static broadcast(message: string) {
-        this.messages.add(message);
+    public broadcast(ws:WebSocket, message: string) {
+        this.addMessages(ws, message);
         this.connections.forEach((client) => {
             if ((client as any).readyState === WebSocket.OPEN) {
                 (client as any).send(message);

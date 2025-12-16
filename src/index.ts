@@ -1,79 +1,20 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { testConnection } from './config/database';
 import indexRouter from './routes/index';
 import * as WebSocket from 'ws';
 import http from 'http';
-import {randomUUID} from "node:crypto";
+import {ConnectionManager} from "./controllers/ConnectionManager";
+import {container} from "tsyringe";
 
 
 dotenv.config();
 
+container.registerSingleton('ConnectionManager', ConnectionManager)
 // WebSocket 연결 관리자
-export class ConnectionManager {
-    private static connections: Map<string, WebSocket> = new Map();
-    private static messages: Set<String> = new Set();
+const connections: ConnectionManager = container.resolve(ConnectionManager);
 
-    static add(ws: WebSocket) {
-        this.connections.set(randomUUID(), ws);
-    }
-
-    static remove(ws: WebSocket) {
-        let key: string|null = null;
-        const entries = this.connections.entries();
-        for (let [k, v] of entries) {
-            if (v === ws) {
-                key = k;
-                break;
-            }
-        }
-
-        if (key)
-            this.connections.delete(key);
-    }
-
-    static getConnections(): Array<any>
-    {
-        let result: Array<any> = [];
-        for(let [key, conn] of this.connections) {
-            result.push(
-                {
-                    key: key,
-                    test: conn.readyState,
-                    test2: conn.url,
-                    test3: conn.extensions,
-                    connection: conn
-                }
-            );
-        }
-
-        return result;
-    }
-
-    static getCount(): number {
-        return this.connections.size;
-    }
-
-    static addMessages(message: string): void
-    {
-        this.messages.add(message);
-    }
-
-    static getMessageCount(): number {
-        return this.messages.size;
-    }
-
-    static broadcast(message: string) {
-        this.messages.add(message);
-        this.connections.forEach((client) => {
-            if ((client as any).readyState === WebSocket.OPEN) {
-                (client as any).send(message);
-            }
-        });
-    }
-}
 
 const app = express();
 
@@ -104,11 +45,11 @@ const conns: Array<WebSocket> = [];
 wss.on('connection', (ws: WebSocket) => {
     console.log('클라이언트가 연결되었습니다.');
     conns.push(ws);
-    ConnectionManager.add(ws);
+    connections.add(ws);
     // 클라이언트로부터 메시지 수신 시 이벤트 핸들러
     ws.on('message', (message: string) => {
         console.log(`수신 메시지: ${message}`);
-        ConnectionManager.addMessages(message);
+        connections.addMessages(ws, message);
 
         // 연결된 모든 클라이언트에게 메시지 브로드캐스트
         wss.clients.forEach((client) => {
@@ -121,6 +62,7 @@ wss.on('connection', (ws: WebSocket) => {
     // 연결 종료 시 이벤트 핸들러
     ws.on('close', () => {
         console.log('클라이언트 연결이 종료되었습니다.');
+        connections.remove(ws);
     });
 
     // 오류 발생 시 이벤트 핸들러
@@ -134,5 +76,3 @@ const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
     console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
 });
-
-export default app;

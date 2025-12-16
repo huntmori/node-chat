@@ -1,8 +1,11 @@
 import express, { Request, Response, Router } from 'express';
-import { ConnectionManager } from '../index';
+import "reflect-metadata";
+import {ConnectionManager} from "../controllers/ConnectionManager";
+import {container} from "tsyringe";
 
 const router: Router = express.Router();
 
+const connections: ConnectionManager = container.resolve(ConnectionManager);
 
 // Welcome page
 router.get('/', (req: Request, res: Response) => {
@@ -17,11 +20,11 @@ router.get('/', (req: Request, res: Response) => {
 router.get('/api/stats', (req: Request, res: Response) => {
   res.json({
     status: 'online',
-    users: ConnectionManager.getCount(),
-    messages: ConnectionManager.getMessageCount(),
+    users: connections.getCount(),
+    messages: connections.getMessageCount(),
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    connections: ConnectionManager.getConnections()
+    connections: connections.getConnections()
   });
 });
 

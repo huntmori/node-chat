@@ -2,12 +2,18 @@
 // WebSocket 연결 관리자
 import * as WebSocket from "ws";
 import {randomUUID} from "node:crypto";
-import {injectable, singleton} from "tsyringe";
+import {singleton} from "tsyringe";
+
+interface MessageLog {
+    sender: string;
+    message: string;
+    timestamp: string
+}
 
 @singleton()
 export class ConnectionManager {
     private connections: Map<string, WebSocket> = new Map();
-    private messages: Set<object> = new Set();
+    private messages: Array<MessageLog> = [];
 
     constructor(){
         console.log('connection manager created');
@@ -46,10 +52,8 @@ export class ConnectionManager {
             result.push(
                 {
                     key: key,
-                    test: conn.readyState,
-                    test2: conn.url,
-                    test3: conn.extensions,
-                    connection: conn
+                    state: conn.readyState,
+                    messages: this.messages.filter((o)=> o.sender === key)
                 }
             );
         }
@@ -63,14 +67,15 @@ export class ConnectionManager {
 
     public addMessages(ws:WebSocket, message: string): void
     {
-        this.messages.add({
-            sender: this.getKeyByWebsocket(ws),
-            message: message
+        this.messages.push({
+            sender: this.getKeyByWebsocket(ws) || 'unknown',
+            message: message.toString(),
+            timestamp: new Date().toISOString()
         });
     }
 
     public getMessageCount(): number {
-        return this.messages.size;
+        return this.messages.length;
     }
 
     public broadcast(ws:WebSocket, message: string) {

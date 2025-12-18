@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import "reflect-metadata";
-import {ConnectionManager} from "../controllers/ConnectionManager";
+import {ConnectionManager} from "../WebSocket/ConnectionManager";
 import {container} from "tsyringe";
 
 const router: Router = express.Router();

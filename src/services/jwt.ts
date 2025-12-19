@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import CryptoJS from "crypto-js";
+import argon2 from "argon2";
 
 const ACCESS_TOKEN_SECRET = 'access-secret';
 const REFRESH_TOKEN_SECRET = 'refresh-secret';
@@ -17,6 +18,17 @@ interface AuthUser {
     email: string;
     role: string;
 }
+
+export async function encryptPassword(password: string)
+{
+    return await argon2.hash(password);
+}
+
+export async function verifyPassword(password: string, hashed: string)
+{
+    return argon2.verify(password, hashed);
+}
+
 
 // Access Token 생성 (짧은 만료 시간)
 export async function generateAccessToken(payload: TokenPayload) {

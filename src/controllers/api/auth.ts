@@ -3,7 +3,7 @@ import pool from "../../config/database";
 import mysql from 'mysql2/promise';
 import argon2 from "argon2";
 import * as jwt from '../../services/jwt';
-import {TokenPayload} from "../../services/jwt";
+import {TokenPayload, verifyPassword} from "../../services/jwt";
 import { logger } from "../../index";
 import {
     error,
@@ -58,7 +58,7 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
 
     logger.info('selected row: ', row)
 
-    if(!await argon2.verify(row['password'], data.password)) {
+    if(!await verifyPassword(row['password'], data.password)) {
         logger.info('password not matched');
         res.json(error('auth.login', 'please check id or password'))
         return;

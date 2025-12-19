@@ -4,12 +4,14 @@ import dotenv from 'dotenv';
 import path from 'path';
 import indexRouter from './routes/index';
 import authRouter from './controllers/api/auth';
+import memberRouter from './controllers/api/member'
 import * as WebSocket from 'ws';
 import http from 'http';
 import {ConnectionManager} from "./WebSocket/ConnectionManager";
 import {container} from "tsyringe";
 import {WsServer} from "./WebSocket/WsServer";
 import winston from "winston";
+import {getLogger} from "./config/logger";
 
 
 dotenv.config();
@@ -19,31 +21,7 @@ container.registerSingleton('ConnectionManager', ConnectionManager)
 const connections: ConnectionManager = container.resolve(ConnectionManager);
 
 // Winston 로거 설정
-export const logger: winston.Logger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        winston.format.printf(({ timestamp, level, message }) => {
-            return `[${timestamp}][${level}]: ${message}`;
-        })
-    ),
-    transports: [
-        new winston.transports.Console({
-            format: winston.format.combine(
-                winston.format.colorize({ all: true }),
-                winston.format.printf(({ timestamp, level, message }) => {
-                    return `[${timestamp}][${level}]: ${message}`;
-                })
-            )
-        }),
-        new winston.transports.File({
-            filename: 'ws-server.log',
-            format: winston.format.printf(({ timestamp, level, message }) => {
-                return `[${timestamp}][${level}]: ${message}`;
-            })
-        })
-    ]
-});
+export const logger: winston.Logger = getLogger();
 
 const app = express();
 
@@ -62,6 +40,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Routes
 app.use('/', indexRouter);
 app.use('/', authRouter);
+app.use('/', memberRouter);
 
 app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -79,5 +58,5 @@ const wsServer = new WsServer(
 // 서버를 특정 포트에서 실행
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-    console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+    logger.info(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
 });

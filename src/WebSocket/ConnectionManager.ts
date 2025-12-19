@@ -16,7 +16,13 @@ export class ConnectionManager {
     private messages: Array<MessageLog> = [];
 
     constructor(){
-        console.log('connection manager created');
+        console.log(
+            "["
+            + new Date().toISOString()
+                .split('.')[0]
+                .replace('T', ' ')
+            + "][info]: " + 'connection manager created');
+
     }
 
     public add(ws: WebSocket) {

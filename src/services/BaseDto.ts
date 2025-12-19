@@ -4,7 +4,7 @@ export interface BaseResponse {
     error: boolean,
     payload: Payload,
     type: string
-    message: string
+    message: string[]
 }
 
 export interface BaseRequest {
@@ -23,12 +23,16 @@ export function ok(type: string, data: Payload): BaseResponse
         type: type,
         error: false,
         payload: data,
-        message: ''
+        message: []
     }
 }
 
-export function error(type: string, message:string): BaseResponse
+export function error(type: string, message:string[]|string): BaseResponse
 {
+    if(typeof message === 'string') {
+        message = [message];
+    }
+
     return {
         result: false,
         type: type,

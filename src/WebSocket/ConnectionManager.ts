@@ -3,6 +3,8 @@
 import * as WebSocket from "ws";
 import {randomUUID} from "node:crypto";
 import {singleton} from "tsyringe";
+import winston from "winston";
+import {getLogger} from "../config/logger";
 
 interface MessageLog {
     sender: string;
@@ -14,15 +16,11 @@ interface MessageLog {
 export class ConnectionManager {
     private connections: Map<string, WebSocket> = new Map();
     private messages: Array<MessageLog> = [];
+    private logger: winston.Logger;
 
     constructor(){
-        console.log(
-            "["
-            + new Date().toISOString()
-                .split('.')[0]
-                .replace('T', ' ')
-            + "][info]: " + 'connection manager created');
-
+        this.logger = getLogger();
+        this.logger.info("connection manager created")
     }
 
     public add(ws: WebSocket) {
@@ -40,8 +38,8 @@ export class ConnectionManager {
     {
         let key: string|null = null;
         const entries = this.connections.entries();
-        for (let [k, v] of entries) {
-            if (v === ws) {
+        for (let [k, value] of entries) {
+            if (value === ws) {
                 key = k;
                 break;
             }

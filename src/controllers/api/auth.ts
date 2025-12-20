@@ -9,7 +9,7 @@ import {
     error,
     Payload,
     ok, BaseRequest
-} from "../../services/BaseDto";
+} from "../../dtos/BaseDto";
 
 const router:Router = express.Router()
 

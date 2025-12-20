@@ -1,20 +1,18 @@
-import express,
-    {
-        Response,
-        Request,
-        Router
-} from "express";
-import mysql from "mysql2/promise";
-import pool from "../../config/database";
-import {BaseRequest, error, Payload, ok } from "../../services/BaseDto";
+import express, {Request, Response, Router} from "express";
+import {BaseRequest, error, ok, Payload} from "../../dtos/BaseDto";
 import {PostUserCreate} from "../../dtos/PostUserCreate";
 import {getLogger} from "../../config/logger";
-import { BaseRequest as BRequest } from '../../dtos/BaseRequest'
-import {encryptPassword} from "../../services/jwt";
+import {BaseRequest as BRequest} from '../../dtos/BaseRequest'
+import {UserService} from "../../services/UserService";
+import {container} from "tsyringe";
+import {ApiException} from "../../exceptions/ApiException";
+import {UserColumns} from "../../models/User";
+
 
 const router:Router = express.Router()
-const connection:mysql.Pool = pool;
 const logger = getLogger();
+
+const service:UserService = container.resolve(UserService);
 
 router.post(
     '/api/user',
@@ -31,47 +29,48 @@ router.post(
             return;
         }
 
-        let sql = `
-                SELECT  1
-                FROM    users
-                WHERE   %s = ?
-            `
+        let member = null;
 
-        let [idRows] = await connection.query(sql.replace('%s', 'username'), [dto.id ]);
-        let [emailRows] = await connection.query(sql.replace('%s', 'email'), [dto.email]);
-        console.log(idRows);
-        console.log(emailRows);
+        try {
+            member = await service.memberCreate(dto);
+        } catch (e) {
+            if (e instanceof ApiException)
+            {
+                res.json(error('user.create', e.message))
+                return;
+            }
 
-        if(Array.isArray(idRows) && idRows.length > 0) {
-            res.json(error('user.create', 'id already exists'))
-            return;
-        }
-        if(Array.isArray(emailRows) && emailRows.length > 0) {
-            res.json(error('user.create', 'email already exists'))
-            return;
-        }
-
-        let [result] = await connection.query(
-            'insert into users (username, password, email, uid) values (?, ?, ?, UUID())',
-            [
-                dto.id,
-                await encryptPassword(dto.password),
-                dto.email
-            ]
-        )
-        console.log(result);
-        result = result as mysql.ResultSetHeader
-        if(result.affectedRows === 0) {
-            res.json(error('user.create', 'failed to create user'))
+            e = e as Error;
+            res.json(error('user.create', (e as Error).message))
             return;
         }
 
         res.json(ok('user.create', {
-            id: dto.id,
-            email: dto.email
+            id: member?.id,
+            uid: member?.uid,
+            username: member?.username,
+            email: member?.email,
+            created_at: member?.created_at,
+            updated_at: member?.updated_at,
         }))
         return;
     }
 );
+
+router.get(
+    "/api/user/:uid",
+    async (req: Request, res: Response) => {
+        const uid = req.params.uid;
+
+        const member = service.getOne(UserColumns.uid, uid);
+
+        if (member === null) {
+            res.json(error('user.get', 'user not found'));
+            return;
+        }
+
+        
+    }
+)
 
 export default router;

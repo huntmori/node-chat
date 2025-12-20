@@ -12,11 +12,15 @@ import {container} from "tsyringe";
 import {WsServer} from "./WebSocket/WsServer";
 import winston from "winston";
 import {getLogger} from "./config/logger";
+import {UserRepository} from "./repositories/UserRepository";
+import {UserService} from "./services/UserService";
 
 
 dotenv.config();
 
 container.registerSingleton('ConnectionManager', ConnectionManager)
+container.registerSingleton('UserRepository', UserRepository);
+container.registerSingleton('UserService', UserService);
 // WebSocket 연결 관리자
 const connections: ConnectionManager = container.resolve(ConnectionManager);
 

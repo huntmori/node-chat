@@ -1,5 +1,5 @@
 import {validate, ValidationError} from "class-validator";
-import {Payload} from "../services/BaseDto";
+import {Payload} from "./BaseDto";
 import {ClassConstructor, ClassTransformOptions} from "class-transformer/types/interfaces";
 import {
     plainToInstance

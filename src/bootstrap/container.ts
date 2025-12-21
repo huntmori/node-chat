@@ -7,9 +7,10 @@ import {ProfileService} from "../services/ProfileService";
 
 export default function()
 {
-    container.registerSingleton('ConnectionManager', ConnectionManager)
-    container.registerSingleton('UserRepository', UserRepository);
-    container.registerSingleton('UserService', UserService);
-    container.registerSingleton('ProfileRepository', ProfileRepository);
-    container.registerSingleton('ProfileService', ProfileService);
+    // 클래스 자체를 토큰으로 사용 (@singleton 데코레이터와 일관성 유지)
+    container.registerSingleton(ConnectionManager);
+    container.registerSingleton(UserRepository);
+    container.registerSingleton(UserService);
+    container.registerSingleton(ProfileRepository);
+    container.registerSingleton(ProfileService);
 }

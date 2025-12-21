@@ -6,7 +6,8 @@ import {BaseRequest as BRequest} from '../../dtos/BaseRequest'
 import {UserService} from "../../services/UserService";
 import {container} from "tsyringe";
 import {ApiException} from "../../exceptions/ApiException";
-import {UserColumns} from "../../models/User";
+import {User, UserColumns} from "../../models/User";
+import {UserPayload} from "../../dtos/UserPayload";
 
 
 const router:Router = express.Router()
@@ -45,14 +46,14 @@ router.post(
             return;
         }
 
-        res.json(ok('user.create', {
+        const payload: UserPayload = {
             id: member?.id,
             uid: member?.uid,
             username: member?.username,
-            email: member?.email,
             created_at: member?.created_at,
             updated_at: member?.updated_at,
-        }))
+        };
+        res.json(ok('user.create', payload))
         return;
     }
 );
@@ -62,14 +63,23 @@ router.get(
     async (req: Request, res: Response) => {
         const uid = req.params.uid;
 
-        const member = service.getOne(UserColumns.uid, uid);
+        const member = await service.getOne(UserColumns.uid, uid);
 
         if (member === null) {
             res.json(error('user.get', 'user not found'));
             return;
         }
 
-        
+        const payload: UserPayload = {
+            id: member?.id,
+            uid: member?.uid,
+            username: member?.username,
+            created_at: member?.created_at,
+            updated_at: member?.updated_at,
+        };
+
+        res.json(ok('user.get', payload));
+        return;
     }
 )
 

@@ -1,28 +1,19 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
+import "reflect-metadata";
+import express from 'express';
 import dotenv from 'dotenv';
-import path from 'path';
-import indexRouter from './routes/index';
-import authRouter from './controllers/api/auth';
-import memberRouter from './controllers/api/member'
-import * as WebSocket from 'ws';
 import http from 'http';
 import {ConnectionManager} from "./WebSocket/ConnectionManager";
 import {container} from "tsyringe";
-import {WsServer} from "./WebSocket/WsServer";
 import winston from "winston";
 import {getLogger} from "./config/logger";
-import {UserRepository} from "./repositories/UserRepository";
-import {UserService} from "./services/UserService";
-
+import containerSetting from './bootstrap/container';
+import routerSetting from './bootstrap/route';
+import webSocketSettings from './bootstrap/websocket'
+import httpSetting from './bootstrap/http'
 
 dotenv.config();
 
-container.registerSingleton('ConnectionManager', ConnectionManager)
-container.registerSingleton('UserRepository', UserRepository);
-container.registerSingleton('UserService', UserService);
-// WebSocket 연결 관리자
-const connections: ConnectionManager = container.resolve(ConnectionManager);
+containerSetting();
 
 // Winston 로거 설정
 export const logger: winston.Logger = getLogger();
@@ -32,32 +23,14 @@ const app = express();
 const server = http.createServer(app);
 
 // View engine setup
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, '../views'));
+httpSetting(app)
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
+//route
+routerSetting(app);
 
-// Routes
-app.use('/', indexRouter);
-app.use('/', authRouter);
-app.use('/', memberRouter);
-
-app.get('/health', (req: Request, res: Response) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-const wss = new WebSocket.Server({server})
-
-const wsServer = new WsServer(
-    connections,
-    wss,
-    logger
-);
-
+// WebSocket 연결 관리자
+const connections: ConnectionManager = container.resolve(ConnectionManager);
+const wsServer = webSocketSettings(server, connections);
 
 // 서버를 특정 포트에서 실행
 const PORT = process.env.PORT || 8080;

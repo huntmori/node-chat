@@ -1,15 +1,14 @@
 import express, {Request, Response, Router} from "express";
 import pool from "../../config/database";
 import mysql from 'mysql2/promise';
-import argon2 from "argon2";
 import * as jwt from '../../services/jwt';
 import {TokenPayload, verifyPassword} from "../../services/jwt";
-import { logger } from "../../index";
 import {
     error,
     Payload,
     ok, BaseRequest
 } from "../../dtos/BaseDto";
+import {getLogger} from "../../config/logger";
 
 const router:Router = express.Router()
 
@@ -34,13 +33,14 @@ interface User {
     updated_at: Date;
 }
 
-
+const logger = getLogger();
 
 // API endpoint for dynamic data
 router.post('/api/auth/login', async (req: Request, res: Response) => {
     const body = (req.body) as BaseRequest;
+    logger.info(body);
     const data = body.payload as AuthRequest;
-
+    logger.info('data', data);
     let [rows] = await connection.query(
         `
                 SELECT  *

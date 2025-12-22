@@ -5,8 +5,8 @@ import {getUser} from "../../services/jwt";
 import {UserColumns} from "../../models/User";
 import {UserService} from "../../services/UserService";
 import {ProfileService} from "../../services/ProfileService";
-import {ProfileColumns} from "../../models/Profile";
 import {error} from "../../dtos/BaseDto";
+import {ApiException} from "../../exceptions/ApiException";
 
 const router:Router = express.Router()
 const logger = getLogger();
@@ -19,11 +19,32 @@ router.post(
         const body = req.body;
         logger.info('[POST] /api/profile', body);
 
-        const token = req.headers.authorization || '';
-        const userInfo = await getUser(token);
-        logger.info('userInfo', userInfo);
+        let token = '';
+        let userInfo = null;
+        try {
+            token = req.headers.authorization || '';
+            userInfo = await getUser(token);
+            logger.info('userInfo', userInfo);
+        } catch (e) {
+            if (e instanceof ApiException) {
+                res.json(
+                    error('profile.create', e.message)
+                );
+                return;
+            }
+        }
+
         if (!userInfo) {
-            // error
+            res.json(
+                error('profile.create', 'user not found')
+            );
+            return;
+        }
+
+        if (!body.nickname) {
+            res.json(
+                error('profile.create', 'nickname is required')
+            );
             return;
         }
 

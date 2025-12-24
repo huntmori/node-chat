@@ -30,7 +30,7 @@ src/
 ├── controllers/      # API 컨트롤러
 │   └── api/
 │       ├── auth.ts   # 인증 API
-│       └── member.ts # 회원 관리 API
+│       └── user.ts # 회원 관리 API
 ├── dtos/            # 데이터 전송 객체
 ├── models/          # 데이터 모델
 ├── repositories/    # 데이터 액세스 계층
@@ -44,7 +44,7 @@ src/
 
 1. **Presentation Layer** (Controller)
    - `controllers/api/auth.ts`: 로그인 API
-   - `controllers/api/member.ts`: 회원 생성 API
+   - `controllers/api/user.ts`: 회원 생성 API
 
 2. **Business Logic Layer** (Service)
    - `services/UserService.ts`: 사용자 비즈니스 로직
@@ -68,7 +68,7 @@ src/
 - **JWT 토큰 발급**: Access Token + Refresh Token
 - **보안 수준**: ⭐⭐⭐⭐ (우수)
 
-### 2. 회원 관리 (member.ts:17-49)
+### 2. 회원 관리 (user.ts:17-49)
 - **회원 가입**: `POST /api/user`
 - **입력 검증**: class-validator를 통한 DTO 검증
 - **중복 체크**: 사용자명, 이메일 중복 검사 (UserService.ts:27-35)
@@ -124,7 +124,7 @@ src/
 
 1. **에러 핸들링 미흡**
    ```typescript
-   // member.ts:32-38 - 빈 catch 블록
+   // user.ts:32-38 - 빈 catch 블록
    try {
        member = await service.memberCreate(dto);
    } catch (e) {
@@ -139,7 +139,7 @@ src/
    **권장**: 명확한 에러 메시지와 HTTP 상태 코드 반환
 
 2. **API 응답 표준화 부재**
-   - GET /api/user 엔드포인트 구현 미완성 (member.ts:52-57)
+   - GET /api/user 엔드포인트 구현 미완성 (user.ts:52-57)
    - 일관되지 않은 응답 구조
 
 3. **보안 취약점**
@@ -225,7 +225,7 @@ src/
 
 ### 1. 에러 처리 개선 예시
 ```typescript
-// member.ts 개선안
+// user.ts 개선안
 try {
     member = await service.memberCreate(dto);
 } catch (e) {

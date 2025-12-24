@@ -25,6 +25,34 @@ router.post(
             token = req.headers.authorization || '';
             userInfo = await getUser(token);
             logger.info('userInfo', userInfo);
+
+
+            if (!userInfo) {
+                res.json(
+                    error('profile.create', 'user not found')
+                );
+                return;
+            }
+
+            if (!body.nickname) {
+                res.json(
+                    error('profile.create', 'nickname is required')
+                );
+                return;
+            }
+
+            const user = await userService.getOne(UserColumns.username, userInfo?.userId || '');
+
+            if (user === null) {
+                // error
+                res.json(error('profile.create', 'user not found'))
+                return;
+            }
+
+            const profile = await profileService.createProfile(user, body.nickname)
+
+            res.json(profile);
+            return;
         } catch (e) {
             if (e instanceof ApiException) {
                 res.json(
@@ -33,33 +61,6 @@ router.post(
                 return;
             }
         }
-
-        if (!userInfo) {
-            res.json(
-                error('profile.create', 'user not found')
-            );
-            return;
-        }
-
-        if (!body.nickname) {
-            res.json(
-                error('profile.create', 'nickname is required')
-            );
-            return;
-        }
-
-        const user = await userService.getOne(UserColumns.username, userInfo?.userId || '');
-
-        if (user === null) {
-            // error
-            res.json(error('profile.create', 'user not found'))
-            return;
-        }
-
-        const profile = await profileService.createProfile(user, body.nickname)
-
-        res.json(profile);
-        return;
     }
 ).get(
     '/api/profile/:uid',

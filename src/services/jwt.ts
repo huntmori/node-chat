@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import CryptoJS from "crypto-js";
 import argon2 from "argon2";
+import {UserRepository} from "../repositories/UserRepository";
+import {UserColumns} from "../models/User";
+import {ApiException} from "../exceptions/ApiException";
+import {Request} from "express";
 
 const ACCESS_TOKEN_SECRET = 'access-secret';
 const REFRESH_TOKEN_SECRET = 'refresh-secret';
@@ -18,6 +22,8 @@ interface AuthUser {
     email: string;
     role: string;
 }
+
+const userRepository: UserRepository = new UserRepository();
 
 export async function encryptPassword(password: string)
 {
@@ -81,7 +87,7 @@ export function revokeRefreshToken(refreshToken: string): void {
     refreshTokens.delete(refreshToken);
 }
 
-export function getUser(token: string): Promise<TokenPayload | null> {
+export function parseToken(token: string): Promise<TokenPayload | null> {
     return new Promise((resolve) => {
         let realToken = token;
         if (token.indexOf(" ") > 0) {
@@ -108,4 +114,38 @@ export function getUser(token: string): Promise<TokenPayload | null> {
             resolve(null);
         }
     });
+}
+
+export async function getUserByAccessToken(accessToken: string)
+{
+    const userInfo = await parseToken(accessToken);
+
+    if (userInfo === null) {
+        throw new ApiException(
+            'token is not available',
+            400,
+            'auth.fail'
+        )
+    }
+
+    const userId = userInfo?.userId ?? '';
+
+    const user = await userRepository.getOne(UserColumns.username, userId);
+
+    if(user === null) {
+        throw new ApiException(
+            'user not found',
+            400,
+            'auth.fail'
+        )
+    }
+
+    return user;
+}
+
+export async function getUserByRequest(req: Request)
+{
+    let token = req.headers.authorization ?? '';
+
+    return getUserByAccessToken(token);
 }

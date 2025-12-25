@@ -1,17 +1,18 @@
 import express, {Request, Response, Router} from "express";
 import {getLogger} from "../../config/logger";
 import {container} from "tsyringe";
-import {getUser} from "../../services/jwt";
-import {UserColumns} from "../../models/User";
-import {UserService} from "../../services/UserService";
+import {getUserByAccessToken, getUserByRequest} from "../../services/jwt";
 import {ProfileService} from "../../services/ProfileService";
-import {error} from "../../dtos/BaseDto";
+import {errorResponse, okResponse} from "../../dtos/BaseDto";
 import {ApiException} from "../../exceptions/ApiException";
+import {ProfileColumns} from "../../models/Profile";
+import {ProfileDto} from "../../dtos/ProfileDto";
+import {BaseRequest} from "../../dtos/BaseRequest";
+import {plainToInstance} from "class-transformer";
 
 const router:Router = express.Router()
 const logger = getLogger();
 
-const userService: UserService = container.resolve(UserService);
 const profileService: ProfileService = container.resolve(ProfileService);
 router.post(
     '/api/profile',
@@ -19,45 +20,26 @@ router.post(
         const body = req.body;
         logger.info('[POST] /api/profile', body);
 
-        let token = '';
-        let userInfo = null;
         try {
-            token = req.headers.authorization || '';
-            userInfo = await getUser(token);
-            logger.info('userInfo', userInfo);
-
-
-            if (!userInfo) {
-                res.json(
-                    error('profile.create', 'user not found')
-                );
-                return;
-            }
-
             if (!body.nickname) {
-                res.json(
-                    error('profile.create', 'nickname is required')
-                );
+                errorResponse(res, 'profile.create', 'nickname is required');
                 return;
             }
 
-            const user = await userService.getOne(UserColumns.username, userInfo?.userId || '');
+            const user = await getUserByRequest(req);
 
-            if (user === null) {
-                // error
-                res.json(error('profile.create', 'user not found'))
+            if (user === null) { // error
+                errorResponse(res, 'profile.create', 'user not found')
                 return;
             }
 
             const profile = await profileService.createProfile(user, body.nickname)
 
-            res.json(profile);
+            okResponse(res, 'profile.create', BaseRequest.plainToInstance(ProfileDto, profile));
             return;
         } catch (e) {
             if (e instanceof ApiException) {
-                res.json(
-                    error('profile.create', e.message)
-                );
+                errorResponse(res, 'profile.create', e.message)
                 return;
             }
         }
@@ -68,11 +50,54 @@ router.post(
         const uid = req.params.uid;
         logger.info('[GET] /api/profile/:uid', uid);
     }
-).patch(
-    '/api/profile/nickname',
+).get(
+    '/api/profile/me',
     async (req: Request, res: Response) => {
         const body = req.body;
+        logger.info('[POST] /api/profile', body);
+
+        try {
+            const user = await getUserByRequest(req);
+
+            const profiles = await profileService.getList([
+                {
+                    column: ProfileColumns.user_uid,
+                    value: user.uid
+                }
+            ]) ?? [];
+
+            const dtos = profiles.map(profile=> {
+                return plainToInstance(ProfileDto, profile);
+            });
+
+            okResponse(res, 'profile.get', dtos);
+        } catch(e) {
+            errorResponse(res, 'profile.get', 'error while get profile')
+            return;
+        }
+    }
+).patch(
+    '/api/profile/:uid/nickname',
+    async (req: Request, res: Response) => {
+        const body = req.body;
+        const uid = req.params.uid;
         logger.info('[PATCH] /api/profile/nickname', body)
+        const ACTION_NAME: string = "profile.patch.nickname"
+        try {
+            const user = await getUserByRequest(req);
+            const profile = await profileService.getOne(ProfileColumns.uid, uid);
+
+            const result = await profileService.changeNickname(user, profile, body.nickname);
+
+        } catch (e) {
+            errorResponse(
+                res,
+                ACTION_NAME,
+                (e as Error).message
+            );
+            return;
+        }
+
     }
 ).delete(
     '/api/profile/:uid',

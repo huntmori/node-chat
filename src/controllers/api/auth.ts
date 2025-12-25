@@ -71,7 +71,7 @@ router.post('/api/auth/login', async (req: Request, res: Response) => {
     const accessToken: string = await jwt.generateAccessToken(payload);
     const refreshToken: string = jwt.generateRefreshToken(payload);
 
-    logger.info('getUser:', await jwt.getUser(accessToken));
+    logger.info('getUser:', await jwt.parseToken(accessToken));
 
     const responseBody: AuthResponse = {
         access_token: accessToken,

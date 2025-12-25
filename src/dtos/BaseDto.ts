@@ -1,3 +1,4 @@
+import {Response} from "express";
 
 export interface BaseResponse {
     result: boolean,
@@ -40,5 +41,15 @@ export function error(type: string, message:string[]|string): BaseResponse
         payload: {},
         message: message
     }
+}
+
+export function okResponse(res:Response, type:string, data:Payload| Payload[])
+{
+    return res.json(ok(type, data));
+}
+
+export function errorResponse(res:Response, type:string, message:string[]|string)
+{
+    return res.json(error(type, message));
 }
 

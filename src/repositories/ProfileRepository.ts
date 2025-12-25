@@ -3,6 +3,7 @@ import {BaseRepository} from "./BaseRepository";
 import {User} from "../models/User";
 import {Profile, ProfileColumns} from "../models/Profile";
 import mysql from "mysql2/promise";
+import {ApiException} from "../exceptions/ApiException";
 
 @singleton()
 export class ProfileRepository extends BaseRepository
@@ -71,5 +72,56 @@ export class ProfileRepository extends BaseRepository
         const profile = new Profile();
         Object.assign(profile, rows[0]);
         return profile;
+    }
+
+    async update(profile: Profile) {
+        let sql = `
+            UPDATE  ${Profile.TABLE}
+            SET     ${ProfileColumns.nickname} = ?,
+                    ${ProfileColumns.updated_at} = NOW(),
+                    ${ProfileColumns.is_active} = ?,
+                    ${ProfileColumns.is_deleted} = ?,
+                    ${ProfileColumns.deleted_at} = ?
+            WHERE   ${ProfileColumns.uid} = ?
+        `;
+
+        const [result] = await this.connection.query(sql, [
+            profile.nickname,
+            profile.updated_at,
+            profile.is_active,
+            profile.is_deleted,
+            profile.deleted_at,
+            profile.uid
+        ]) as any[];
+
+        if (result === null || result.affectedRows === 0) {
+
+        }
+
+        return await this.getOne(ProfileColumns.uid, profile.uid ?? '');
+    }
+
+    async getList(param: { column: ProfileColumns; value: string }[]) {
+        let baseSql = `
+            SELECT  *
+            FROM    ${Profile.TABLE}
+            WHERE   1=1
+        `;
+        let values:string[] = [];
+
+        param.forEach(p => {
+            baseSql += ` AND ${p.column} = ? `
+            values.push(p.value);
+        });
+
+        const [rows] = await this.connection.query(baseSql, values) as any[];
+
+        const result = rows.map((row: any) => {
+            const profile = new Profile();
+            Object.assign(profile, row);
+            return profile;
+        })
+        this.logger.info(result);
+        return result;
     }
 }

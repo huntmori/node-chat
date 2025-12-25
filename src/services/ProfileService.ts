@@ -51,4 +51,30 @@ export class ProfileService extends BaseService
 
         return profile;
     }
+
+    async getList(param: { column: ProfileColumns; value: string }[]) {
+        return this.profileRepository.getList(param);
+    }
+
+    async changeNickname(user: User, profile: null | Profile, nickname: string) {
+        if (profile === null) {
+            throw new ApiException(
+                'profile not found',
+                404,
+                'profile.changeNickname'
+            );
+        }
+
+        if (profile.user_uid !== user.uid) {
+            throw new ApiException(
+                'profile not found',
+                404,
+                'profile.changeNickname'
+            );
+        }
+
+        profile.nickname = nickname;
+
+        const saved = await this.profileRepository.update(profile);
+    }
 }
